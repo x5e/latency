@@ -1,0 +1,80 @@
+
+        body {
+            font-size: x-large;
+            font-family: monospace;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+            background: lightgrey;
+        }
+        a {
+            color: black;
+        }
+        textarea
+        {
+            overflow-y: scroll;
+            font-family: monospace;
+            font-size: large;
+            background: lightgrey;
+            border: 1px solid;
+            resize: none;
+        }
+        #summary {
+            overflow-y: hidden;
+        }
+        button {
+            font-size: large;
+        }
+        #wait {
+            display: none;
+        }
+        #raw {
+            border: 0px solid;
+            border-radius: 25px;
+            display: inline-block;
+            padding: 10px;
+        }
+        #ask {
+            margin-left: auto;
+            margin-right: auto;
+            border: 0px solid;
+            border-radius: 25px;
+            padding: 10px;
+        }
+    #tt {
+    }
+    pre {
+        /* border: 3px solid; */
+        width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: left;
+    }
+    table {
+        border: 2px solid;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 1em;
+    }
+    tr:hover {
+       background: black;
+       color: white;
+    }
+    td,th {
+        font-size: large;
+        font-family: monospace;
+        padding: 5px;
+        text-align: center;
+        border: 1px solid;
+    }
+    #fine {
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+        font-size: small;
+    }
+    h1 {
+        margin-bottom: 0px;
+    }
+    #quality {
+        margin-top: 1em;
+    }

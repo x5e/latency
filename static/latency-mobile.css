@@ -1,0 +1,83 @@
+
+        html,body {
+            overflow-x: hidden;
+        }
+        body {
+            position: relative;
+            font-size: x-large;
+            font-family: monospace;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+            background: lightgrey;
+        }
+        h1 {
+            font-size: 1em;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+        }
+        textarea
+        {
+            overflow-y: hidden;
+            font-family: monospace;
+            font-size: large;
+            background: lightgrey;
+            border: 0px solid;
+            resize: none;
+        }
+        #observations {
+            display: none;
+        }
+        button {
+            font-size: large;
+        }
+        #wait {
+            display: none;
+        }
+        #raw {
+            border: 0px solid;
+            border-radius: 25px;
+            display: inline-block;
+            padding: 10px;
+        }
+        #ask {
+            border: 0px solid;
+            border-radius: 25px;
+            padding: 10px;
+        }
+        #asks {
+            display: none;
+        }
+    #tt {
+    }
+    pre {
+        /* border: 3px solid; */
+        width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        text-align: left;
+    }
+    table {
+        border: 2px solid;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 1em;
+    }
+    tr:hover {
+       background: #FCF;
+    }
+    td {
+        font-family: monospace;
+        padding: 3px;
+        text-align: center;
+    }
+    #fine {
+        margin-top: 0.5em;
+        margin-bottom: 0.5em;
+    }
+    h1 {
+        margin-bottom: 0px;
+    }
+    #compare {
+        width: 100%;
+    }

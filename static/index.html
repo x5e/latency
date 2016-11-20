@@ -1,0 +1,47 @@
+<html>
+<head>
+    <title>Latency Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="description" 
+content="Test the latency of your internet connection.">
+<link rel="stylesheet" type="text/css" href="/styles/spinner.css">
+<link rel="stylesheet" type="text/css" href="/styles/latency-desktop.css">
+<link rel="stylesheet" type="text/css" media="only screen and (max-device-width: 480px)" href="/styles/latency-mobile.css" />
+</head>
+
+<body>
+<h1>X5E Web Latency Test</h1>
+<div id="fine">
+Provided by X5E
+(<a href="/contact">contact</a> | <a href="/terms/latency.html">disclaimer</a>)
+</div>
+<div id="raw">
+    <textarea id="observations" rows=14 readonly cols=20></textarea>
+    <textarea id="summary" rows=14 readonly cols=29></textarea>
+    <div id="quality"></div>
+</div>
+<div id="ask">
+    <button id="compare" onclick="compare()">
+    Compare to other results nearby.
+    </button>
+</div>
+<div id="wait">
+Getting Location Data: 
+<span id="msg">
+<span class="spinner">
+  <span class="bounce1"></span>
+  <span class="bounce2"></span>
+  <span class="bounce3"></span>
+</span>
+</span>
+</div>
+<div id="tt">
+</div>
+<pre id="foo">
+</pre>
+</body>
+<!--<script src="/scripts/ga.js"></script>-->
+<script src="/scripts/general.js"></script>
+<script src="/scripts/hit.js"></script>
+<script src="/scripts/latency.js"></script>
+</html>
