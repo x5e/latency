@@ -15,13 +15,12 @@ import socket
 assert sys.version_info >= (3, 4)
 
 
-def main():
+def main(forking=True):
     port = 1234
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("static")
-    for sock, addr in listen(port=port, forking=False):
+    for sock, addr in listen(port=port, forking=forking):
         request = Request(sock=sock)
-        print(request)
         if request.requested_path == "/web_socket":
             play_ping_pong(sock, request)
         else:
@@ -33,6 +32,8 @@ def main():
                 response = request.serve()
             sock.sendall(response)
             sock.close()
+        if forking:
+            sys.exit(0)
 
 
 def register_hit(request: Request) -> bytes:
