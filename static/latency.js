@@ -1,3 +1,7 @@
+"use strict";
+var points = [];
+main();
+
 function println(x) {
     document.getElementById("foo").innerHTML += (x + "\n");
 }
@@ -8,7 +12,7 @@ function showPosition(position) {
     document.getElementById("wait").style.display = "none";
     var ab = new ArrayBuffer(80);
     var fa = new Float64Array(ab);
-    src = [
+    var src = [
         x5e.hitId,
         position.coords.latitude,
         position.coords.longitude,
@@ -55,6 +59,7 @@ function compare(x) {
     navigator.geolocation.getCurrentPosition(showPosition,showError);
 }
 function format(x) {
+    var suffix;
     if (x < 1) {
         suffix = " milliseconds";
         x = x * 1000;
@@ -62,23 +67,19 @@ function format(x) {
         suffix = " seconds";
     }
     
-    y = x.toFixed(1)
+    var y = x.toFixed(1)
     while (y.length < 6) {
         y = " " + y;
     }
     return(y + suffix);
 }
-var points = [];
-
 function percentile(p) {
     var f = p / 100.0;
-    n = Math.round((points.length - 1) * f);
+    var n = Math.round((points.length - 1) * f);
     return points[n];
 }
-
-
 function observe(x) {
-    y = format(x); 
+    var y = format(x);
     var obs = document.getElementById("observations");
     obs.innerHTML = obs.innerHTML + "\n" + y;
     obs.scrollTop = obs.scrollHeight;
@@ -95,8 +96,8 @@ function observe(x) {
         q.innerHTML = "quality: horrible";
         break;
     }
-    tx = 0;
-    txx = 0;
+    var tx = 0;
+    var txx = 0;
     for ( var i = 0; i < points.length; i++) {
         tx += points[i];
         txx += points[i] * points[i];
@@ -105,9 +106,9 @@ function observe(x) {
     var exx = txx/points.length;
     var sd = Math.sqrt(exx - (mean*mean));
     var summary = document.getElementById("summary");
-    max = points[points.length - 1];
+    var max = points[points.length - 1];
     summary.innerHTML = "";
-    nObs = points.length.toFixed(0);
+    var nObs = points.length.toFixed(0);
     while (nObs.length < 3) nObs = " " + nObs;
     summary.innerHTML += "            " + nObs + " observations\n";
     summary.innerHTML += "\n";
@@ -127,38 +128,46 @@ function observe(x) {
 function str2doubles(x) {
     var dv = new Float64Array(x);
     var out = [];
-    for (i=0;i<dv.length;i++) {out.push(dv[i]);}
+    for (var i=0;i<dv.length;i++) {out.push(dv[i]);}
     return out;
 }
-var target = "wss://www.x5e.com/wss/latency";
-var websocket = new WebSocket(target + "?" + x5e.hitId);
-websocket.binaryType = "arraybuffer";
-websocket.onclose = function(evt) {  
-    var obs = document.getElementById("observations");
-    obs.innerHTML = obs.innerHTML + "\n         done!";
-    obs.scrollTop = obs.scrollHeight;
-}
-websocket.onmessage = function(evt) {
-    try {
-        if (typeof(evt.data) == "string") {
-            if (evt.data.indexOf('0x') === 0) {
-                websocket.send(evt.data);
-            } 
-            return;
-        } else {
-            var vals = str2doubles(evt.data);
-            var latency = vals.shift();
-            observe(latency);
-        }
-    } catch (e) {
-        println("exception: " + e);
+function main() {
+    var prot = "ws:";
+    if (window.location.protocol == "https:")
+        prot = "wss:";
+    var target = prot + window.location.host + "/web_socket";
+    // target = "ws://localhost:4321/";
+    var websocket = new WebSocket(target);
+    websocket.binaryType = "arraybuffer";
+    websocket.onclose = function (evt) {
+        var obs = document.getElementById("observations");
+        obs.innerHTML = obs.innerHTML + "\n         done!";
+        obs.scrollTop = obs.scrollHeight;
     }
-}
-websocket.onerror = function(evt) { println("onerror:" + evt.data); }
-websocket.onopen = function(evt) {
-    //println("websocket onopen");
-}
-var foo = document.getElementById("foo");
-if (!("geolocation" in navigator)) {
-    document.getElementById("ask").style.display = "none";
+    websocket.onmessage = function (evt) {
+        try {
+            if (typeof(evt.data) == "string") {
+                if (evt.data.indexOf('0x') === 0) {
+                    websocket.send(evt.data);
+                }
+                return;
+            } else {
+                var vals = str2doubles(evt.data);
+                var latency = vals.shift();
+                observe(latency);
+            }
+        } catch (e) {
+            println("exception: " + e);
+        }
+    }
+    websocket.onerror = function (evt) {
+        println("onerror:" + evt.data);
+    }
+    websocket.onopen = function (evt) {
+        //println("websocket onopen");
+    }
+    var foo = document.getElementById("foo");
+    if (!("geolocation" in navigator)) {
+        document.getElementById("ask").style.display = "none";
+    }
 }
