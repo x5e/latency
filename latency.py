@@ -21,6 +21,7 @@ def main(forking=True):
     os.chdir("static")
     for sock, addr in listen(port=port, forking=forking):
         request = Request(sock=sock)
+        print(request.requested_path)
         if request.requested_path == "/web_socket":
             play_ping_pong(sock, request)
         else:
@@ -37,7 +38,12 @@ def main(forking=True):
 
 
 def register_hit(request: Request) -> bytes:
-    return bytes(request)
+    header = b'HTTP/1.0 200 OK\r\n\r\n'
+    hit_id = random.randint(WEB_MIN, WEB_MAX)
+    as_str = str(hit_id)
+    as_bytes = as_str.encode()
+    return header + as_bytes 
+    
 
 
 def on_geo(request: Request) -> bytes:
@@ -87,8 +93,10 @@ def play_ping_pong(sock: socket.socket, request: Request):
                 packed = struct.pack("d",delay)
                 wss.send(packed, kind=BIN)
             time.sleep(0.1)
-        wss.close()
+    except AssertionError:
+        pass
     finally:
+        wss.close()
         if len(observations) > 2 and re.fullmatch(r"\d+", request.query_string):
             record_observations(int(request.query_string), observations)
 
@@ -97,4 +105,4 @@ def get_con():
     return psycopg2.connect(host="db.x5e.com", database="latency", user="latency")
 
 if __name__ == "__main__":
-    main()
+    main(forking=("nofork" not in sys.argv))
