@@ -20,21 +20,25 @@ def main(forking=True):
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("static")
     for sock, addr in listen(port=port, forking=forking):
-        request = Request(sock=sock)
-        print(request.requested_path)
-        if request.requested_path == "/web_socket":
-            play_ping_pong(sock, request)
-        else:
-            if request.requested_path == "/hit":
-                response = register_hit(request)
-            elif request.requested_path == "/geo":
-                response = on_geo(request)
+        try:
+            request = Request(sock=sock, remote_ip=addr[0], listening_port=port)
+            print(request.requested_path)
+            if request.requested_path == "/web_socket":
+                play_ping_pong(sock, request)
             else:
-                response = request.serve()
-            sock.sendall(response)
+                if request.requested_path == "/hit":
+                    response = register_hit(request)
+                elif request.requested_path == "/geo":
+                    response = on_geo(request)
+                else:
+                    response = request.serve()
+                sock.sendall(response)
+        except (ConnectionAbortedError, TimeoutError, ValueError):
+            pass
+        finally:
             sock.close()
-        if forking:
-            sys.exit(0)
+            if forking:
+                sys.exit(0)
 
 
 def register_hit(request: Request) -> bytes:
@@ -44,7 +48,6 @@ def register_hit(request: Request) -> bytes:
     as_bytes = as_str.encode()
     return header + as_bytes 
     
-
 
 def on_geo(request: Request) -> bytes:
     return bytes(request)
@@ -81,20 +84,21 @@ def play_ping_pong(sock: socket.socket, request: Request):
             msg = hex(random.randint(WEB_MIN, WEB_MAX)).encode()
             wss.send(msg, kind=TEXT)
             started = time.time()
-            x, y, z = select.select([wss], [], [], 10)
+            selected = select.select([wss], [], [], 10)
             ended = time.time()
-            assert x, "timeout"
+            if not selected[0]:
+                raise TimeoutError()
             packets = wss.recvall()
-            assert len(packets) == 1, packets
-            assert packets[0] == msg, packets[0]
+            if not len(packets) == 1:
+                raise ConnectionAbortedError()
+            if packets[0] != msg:
+                raise ValueError()
             delay = ended - started
             if i:  # ignore first delay
                 observations.append(delay)
                 packed = struct.pack("d",delay)
                 wss.send(packed, kind=BIN)
             time.sleep(0.1)
-    except AssertionError:
-        pass
     finally:
         wss.close()
         if len(observations) > 2 and re.fullmatch(r"\d+", request.query_string):
