@@ -12,6 +12,7 @@ function register_hit() {
     payload.screenWidth = screen.width;
     payload.screenHeight = screen.height;
     payload.userAgent = navigator.userAgent;
+    payload.href = window.location.href;
     whack("xhr/hit", JSON.stringify(payload), main, putMsg)
 }
 

@@ -11,6 +11,7 @@ import numpy
 import psycopg2
 import re
 import socket
+import json
 
 assert sys.version_info >= (3, 4)
 
@@ -27,12 +28,12 @@ def main(forking=True):
                 play_ping_pong(sock, request)
             else:
                 if request.requested_path == "/xhr/hit":
-                    response = register_hit(request)
+                    register_hit(request=request, sock=sock)
                 elif request.requested_path == "/xhr/geo":
-                    response = on_geo(request)
+                    on_geo(request=request, sock=sock)
                 else:
-                    response = request.serve()
-                sock.sendall(response)
+                    sock.sendall(request.serve())
+                    sock.close()
         except (ConnectionAbortedError, TimeoutError, ValueError, StopIteration):
             pass
         finally:
@@ -41,11 +42,11 @@ def main(forking=True):
                 sys.exit(0)
 
 
-def register_hit(request: Request) -> bytes:
+def register_hit(request: Request, sock: socket.socket) -> bytes:
     print("register_hit body=>%r" % request.body)
     out = bytearray(b'HTTP/1.0 200 OK\r\n')
     trail = request.cookies.get("trail")
-    first = False
+    first_hit = False
     if not trail:
         trail = random.randint(WEB_MIN, WEB_MAX)
         # expires= path=/
@@ -53,15 +54,24 @@ def register_hit(request: Request) -> bytes:
         if "x5e.com" in request.headers.get("host", "").lower():
             out += b" domain=x5e.com;"
         out += b'\r\n'
-        first = True
+        first_hit = True
     out += b'\r\n'
     hit_id = random.randint(WEB_MIN, WEB_MAX)
     out += str(hit_id).encode()
-    return out
-    
+    sock.sendall(out)
+    sock.close()
+    fields = [hit_id, trail, first_hit, request.remote_ip, request.rdns(),
+              json.dumps(request.headers), request.body.decode()]
+    bits = ",".join(["%s" for f in fields])
+    query = "insert into latency.hits (hit_id, trail, first_hit, remote_ip, rdns, headers, payload) values (%s)" % bits
+    with get_con() as con:
+        with con.cursor() as cur:
+            cur.execute(query, fields)
 
-def on_geo(request: Request) -> bytes:
-    return b"<pre>" + bytes(request) + b"</pre>"
+
+def on_geo(request: Request, sock: socket.socket):
+    sock.sendall(b"<pre>" + bytes(request) + b"</pre>")
+    sock.close()
 
 
 def record_observations(hit_id: int, observations: List) -> None:
@@ -75,19 +85,20 @@ def record_observations(hit_id: int, observations: List) -> None:
             numpy.mean(observations), numpy.std(observations)]
     for i in [0, 1, 5, 25, 50, 75, 95, 99, 100]:
         vals.append(p(i))
-    query = """
-        insert into log.latencies
-        values (
-            %s,%s,%s,%s,
-            %s,%s,%s,%s,%s,
-            %s,%s,%s,%s);
-    """
-    doorman.cur.execute(query, vals)
-    doorman.con.commit()
-    sys.stderr.write("%d observations for %s from %s\n" % (len(observations), hit_id, addr[0]))
+    bits = ",".join(["%s" for f in vals])
+    query = "insert into latency.latencies values (%s);" % bits
+    with get_con() as con:
+        with con.cursor() as cur:
+            cur.execute(query, vals)
+    sys.stderr.write("%d observations for %s\n" % (len(observations), hit_id))
 
 
 def play_ping_pong(sock: socket.socket, request: Request):
+    hit_id = int(request.query_string)
+    if not (WEB_MIN <= hit_id <= WEB_MAX):
+        sock.sendall(b"HTTP/1.0 400 USER_ERROR\r\n\r\n")
+        sock.close()
+        return
     wss = WebSocketServer(sock=sock, request=request)
     observations = list()
     try:
@@ -113,11 +124,16 @@ def play_ping_pong(sock: socket.socket, request: Request):
     finally:
         wss.close()
         if len(observations) > 2 and re.fullmatch(r"\d+", request.query_string):
-            record_observations(int(request.query_string), observations)
+            record_observations(hit_id, observations)
 
 
 def get_con():
-    return psycopg2.connect(host="db.x5e.com", database="latency", user="latency")
+    return psycopg2.connect(
+        host="localhost",
+        database="latency",
+        user="doorman",
+        password="doorman",
+        port=5432)
 
 if __name__ == "__main__":
     main(forking=("nofork" not in sys.argv))

@@ -1,4 +1,4 @@
-create table if not exists latencies (
+create table if not exists latency.latencies (
     hit BIGINT PRIMARY KEY,
     nobs int,
     mean real,
