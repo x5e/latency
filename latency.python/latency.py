@@ -18,12 +18,12 @@ assert sys.version_info >= (3, 4)
 def main(forking=True):
     port = 1234
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    os.chdir("../static")
+    os.chdir("../latency.static")
     for sock, addr in listen(port=port, forking=forking):
         try:
             request = Request(sock=sock, remote_ip=addr[0], listening_port=port)
             print(request.requested_path)
-            if request.requested_path == "/web_socket":
+            if request.headers.get("upgrade") == "websocket":
                 play_ping_pong(sock, request)
             else:
                 if request.requested_path == "/xhr/hit":

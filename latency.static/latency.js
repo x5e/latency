@@ -11,6 +11,7 @@ function register_hit() {
     payload.availWidth = screen.availWidth;
     payload.screenWidth = screen.width;
     payload.screenHeight = screen.height;
+    payload.userAgent = navigator.userAgent;
     whack("xhr/hit", JSON.stringify(payload), main, putMsg)
 }
 
