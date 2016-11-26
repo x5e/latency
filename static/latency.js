@@ -1,19 +1,57 @@
 "use strict";
 var points = [];
-main();
+var hit_id = null;
+
+function register_hit() {
+    var payload = {};
+    payload.referrer = document.referrer;
+    payload.innerWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || null;
+    payload.innerHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight || null;
+    payload.availHeight = screen.availHeight;
+    payload.availWidth = screen.availWidth;
+    payload.screenWidth = screen.width;
+    payload.screenHeight = screen.height;
+    whack("xhr/hit", JSON.stringify(payload), main, putMsg)
+}
+
+function whack(url, data, cb, on_err, on_timeout) {
+    if (typeof(data) != "string" && data && ! data.byteLength) {
+        data = JSON.stringify(data);
+    }
+    var request = new XMLHttpRequest();
+    request.timeout = 10000;
+    request.ontimeout = function () {
+        if (on_timeout) return on_timeout();
+        if (on_err) return on_err("timeout",100);
+        console.error("timeout hitting: " + url);
+    };
+    request.onreadystatechange = function() {
+        if (request.readyState != 4) return;
+        if (request.status == 200) {
+            if (cb) cb(request.responseText);
+        } else {
+            if (on_err) on_err(request.responseText,request.status);
+        }
+    };
+    request.open("POST", url, true);
+    request.send(data || "");
+}
 
 function println(x) {
     document.getElementById("foo").innerHTML += (x + "\n");
 }
+
 function putMsg(x) {
     document.getElementById("msg").innerHTML = x;
 }
+
 function showPosition(position) {
+    console.log("showPosition");
     document.getElementById("wait").style.display = "none";
     var ab = new ArrayBuffer(80);
     var fa = new Float64Array(ab);
     var src = [
-        x5e.hitId,
+        hit_id,
         position.coords.latitude,
         position.coords.longitude,
         position.coords.accuracy,
@@ -22,22 +60,27 @@ function showPosition(position) {
         position.coords.heading,
         position.coords.speed,
         position.timestamp
-    ]
+    ];
     for (var i=0;i<10;i++) {
         if (src[i] == null)
             fa[i] = NaN;
         else
             fa[i] = src[i];
     }
-    cb = function (resp) {
+    var cb = function (resp) {
         document.getElementById("tt").innerHTML = resp;
-    }
-    err = function(what) {println("error");println(what);}
+    };
+    var err = function(what) {
+        println("error");
+        println(what);
+    };
     var kind = "desktop";
     if (window.innerWidth <= 480) kind = "mobile";
-    x5e.whack("/xhr/latency?" + kind,ab,cb,err);
+    whack("xhr/geo?" + kind,ab,cb,err);
 }
+
 function showError(error) {
+    console.log("showError");
     switch(error.code) {
         case error.PERMISSION_DENIED:
             println("User denied the request for Geolocation.");
@@ -53,11 +96,13 @@ function showError(error) {
             break;
     }
 }
+
 function compare(x) {
     document.getElementById("ask").style.display = "none";
     document.getElementById("wait").style.display = "block";
-    navigator.geolocation.getCurrentPosition(showPosition,showError);
+    navigator.geolocation.getCurrentPosition(showPosition, showError);
 }
+
 function format(x) {
     var suffix;
     if (x < 1) {
@@ -67,17 +112,19 @@ function format(x) {
         suffix = " seconds";
     }
     
-    var y = x.toFixed(1)
+    var y = x.toFixed(1);
     while (y.length < 6) {
         y = " " + y;
     }
     return(y + suffix);
 }
+
 function percentile(p) {
     var f = p / 100.0;
     var n = Math.round((points.length - 1) * f);
     return points[n];
 }
+
 function observe(x) {
     var y = format(x);
     var obs = document.getElementById("observations");
@@ -87,14 +134,15 @@ function observe(x) {
     points.sort(function(a,b) {return a-b;});
     var z = percentile(95)*1000;
     var q = document.getElementById("quality");
-    while (1==1) {
-        q.innerHTML=z;
+    while (true) {
+        q.innerHTML = z;
         if (z < 50)  { q.innerHTML = "quality: excellent"; break; }
         if (z < 100)  { q.innerHTML = "quality: good"; break; }
         if (z < 200) { q.innerHTML = "quality: meh"; break; }
         if (z < 400) { q.innerHTML = "quality: poor"; break; }
         q.innerHTML = "quality: horrible";
-        break;
+        if (z >= 0)
+            break;
     }
     var tx = 0;
     var txx = 0;
@@ -125,17 +173,21 @@ function observe(x) {
     summary.innerHTML += "   mean: " + format(mean) + "\n";
     summary.innerHTML += "  stdev: " + format(sd) + "\n";
 }
+
 function str2doubles(x) {
     var dv = new Float64Array(x);
     var out = [];
     for (var i=0;i<dv.length;i++) {out.push(dv[i]);}
     return out;
 }
-function main() {
+
+function main(arg) {
+    hit_id = arg;
     var prot = "ws:";
     if (window.location.protocol == "https:")
         prot = "wss:";
-    var target = prot + window.location.host + "/web_socket";
+    var target = prot + window.location.host + "/web_socket?" + hit_id;
+    console.log(target);
     // target = "ws://localhost:4321/";
     var websocket = new WebSocket(target);
     websocket.binaryType = "arraybuffer";
@@ -143,14 +195,13 @@ function main() {
         var obs = document.getElementById("observations");
         obs.innerHTML = obs.innerHTML + "\n         done!";
         obs.scrollTop = obs.scrollHeight;
-    }
+    };
     websocket.onmessage = function (evt) {
         try {
             if (typeof(evt.data) == "string") {
                 if (evt.data.indexOf('0x') === 0) {
                     websocket.send(evt.data);
                 }
-                return;
             } else {
                 var vals = str2doubles(evt.data);
                 var latency = vals.shift();
@@ -159,13 +210,13 @@ function main() {
         } catch (e) {
             println("exception: " + e);
         }
-    }
+    };
     websocket.onerror = function (evt) {
         println("onerror:" + evt.data);
-    }
+    };
     websocket.onopen = function (evt) {
         //println("websocket onopen");
-    }
+    };
     var foo = document.getElementById("foo");
     if (!("geolocation" in navigator)) {
         document.getElementById("ask").style.display = "none";

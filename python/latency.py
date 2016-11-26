@@ -18,7 +18,7 @@ assert sys.version_info >= (3, 4)
 def main(forking=True):
     port = 1234
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    os.chdir("static")
+    os.chdir("../static")
     for sock, addr in listen(port=port, forking=forking):
         try:
             request = Request(sock=sock, remote_ip=addr[0], listening_port=port)
@@ -26,14 +26,14 @@ def main(forking=True):
             if request.requested_path == "/web_socket":
                 play_ping_pong(sock, request)
             else:
-                if request.requested_path == "/hit":
+                if request.requested_path == "/xhr/hit":
                     response = register_hit(request)
-                elif request.requested_path == "/geo":
+                elif request.requested_path == "/xhr/geo":
                     response = on_geo(request)
                 else:
                     response = request.serve()
                 sock.sendall(response)
-        except (ConnectionAbortedError, TimeoutError, ValueError):
+        except (ConnectionAbortedError, TimeoutError, ValueError, StopIteration):
             pass
         finally:
             sock.close()
@@ -42,15 +42,26 @@ def main(forking=True):
 
 
 def register_hit(request: Request) -> bytes:
-    header = b'HTTP/1.0 200 OK\r\n\r\n'
+    print("register_hit body=>%r" % request.body)
+    out = bytearray(b'HTTP/1.0 200 OK\r\n')
+    trail = request.cookies.get("trail")
+    first = False
+    if not trail:
+        trail = random.randint(WEB_MIN, WEB_MAX)
+        # expires= path=/
+        out += ("Set-Cookie: trail=%d; Expires=Wed, 29 Oct 2037 05:46:09 UTC; Path=/;" % trail).encode()
+        if "x5e.com" in request.headers.get("host", "").lower():
+            out += b" domain=x5e.com;"
+        out += b'\r\n'
+        first = True
+    out += b'\r\n'
     hit_id = random.randint(WEB_MIN, WEB_MAX)
-    as_str = str(hit_id)
-    as_bytes = as_str.encode()
-    return header + as_bytes 
+    out += str(hit_id).encode()
+    return out
     
 
 def on_geo(request: Request) -> bytes:
-    return bytes(request)
+    return b"<pre>" + bytes(request) + b"</pre>"
 
 
 def record_observations(hit_id: int, observations: List) -> None:
