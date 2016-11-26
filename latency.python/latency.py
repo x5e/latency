@@ -3,7 +3,6 @@ from forker import *
 from typing import List
 import os
 import sys
-import select
 import random
 import time
 import struct
@@ -63,15 +62,84 @@ def register_hit(request: Request, sock: socket.socket) -> bytes:
     fields = [hit_id, trail, first_hit, request.remote_ip, request.rdns(),
               json.dumps(request.headers), request.body.decode()]
     bits = ",".join(["%s" for f in fields])
-    query = "insert into latency.hits (hit_id, trail, first_hit, remote_ip, rdns, headers, payload) values (%s)" % bits
+    query = "insert into latency.hits (id, trail, first_hit, remote_ip, rdns, headers, payload) values (%s)" % bits
     with get_con() as con:
         with con.cursor() as cur:
             cur.execute(query, fields)
 
 
 def on_geo(request: Request, sock: socket.socket):
-    sock.sendall(b"<pre>" + bytes(request) + b"</pre>")
-    sock.close()
+    doubles = struct.unpack("d" * 10, request.body)
+
+    lat = doubles[1]
+    lon = doubles[2]
+
+    query = """
+    select round(3961 * 2 * atan2(sqrt(a),sqrt(1-a))) as d,
+    substring(rdns,'[\d\w]+.[\d\w]+$') as isp,
+    (case
+        when p95 < 50 then 'great'
+        when p95 < 100 then 'good'
+        when p95 < 200 then 'meh'
+        when p95 < 400 then 'poor'
+        else 'horrible' end) as quality,
+    p50,p95,p99,mean,stdev
+    from (
+        select *
+    ,power(sin(dlat/2),2) + (cos(lat1)*cos(lat2)*power(sin(dlon/2),2)) as a
+        from (
+        select
+        %s as lat1,
+        %s as lon1,
+        %s - latitude as dlat,
+        %s - longitude as dlon,
+        longitude as lon2 ,latitude as lat2,rdns
+        ,round(mean*1000) as mean,round(stdev*1000) as stdev
+        ,round(p50*1000) as p50,round(p95*1000) as p95 ,round(p99*1000) as p99
+        ,row_number() over (partition by trail order by hits.ts desc) as rn
+        from latency.hits as hits
+        join latency.latencies as t on hits.id = t.hit
+        join latency.locations as o on hits.id = o.hit
+        ) as i
+        where rn = 1
+    ) as j
+    order by 1 limit 30;
+    """
+    mobile = False
+    if request.query_string == "mobile":
+        mobile = True
+
+    with get_con() as con:
+        with con.cursor() as cur:
+            cur.execute(query, [lat, lon, lat, lon])
+            rows = cur.fetchall()
+        out = """
+        <table>
+        <tr><th>miles</th><th>ISP</th><th>quality</th><th>med.</th>
+        """
+        if not mobile:
+            out += "<th>95th</th><th>99th</th><th>mean</th><th>stdev</th></tr>"
+        for row in rows:
+            out += "<tr>"
+            for i, field in enumerate(row):
+                if i <= 3 or not mobile:
+                    if isinstance(field, float):
+                        out += "<td>%d</td>" % field
+                    else:
+                        out += "<td>%s</td>" % field
+            out += "</tr>"
+        out += "</table>"
+        sock.sendall(out.encode())
+        sock.close()
+
+        with con.cursor() as cur:
+            query = """
+                insert into latency.locations
+            (hit,latitude,longitude,accuracy,altitude,alt_acc,heading,speed,acquired)
+                values (%s, %s,%s,%s,%s,%s,%s,%s,%s);
+            """
+            vals = list(doubles[0:9])
+            cur.execute(query, vals)
 
 
 def record_observations(hit_id: int, observations: List) -> None:
@@ -106,11 +174,8 @@ def play_ping_pong(sock: socket.socket, request: Request):
             msg = hex(random.randint(WEB_MIN, WEB_MAX)).encode()
             wss.send(msg, kind=TEXT)
             started = time.time()
-            selected = select.select([wss], [], [], 10)
-            ended = time.time()
-            if not selected[0]:
-                raise TimeoutError()
             packets = wss.recvall()
+            ended = time.time()
             if not len(packets) == 1:
                 raise ConnectionAbortedError()
             if packets[0] != msg:
