@@ -42,7 +42,7 @@ def main(forking=True):
 
 
 def register_hit(request: Request, sock: socket.socket) -> bytes:
-    print("register_hit body=>%r" % request.body)
+    # print("register_hit body=>%r" % request.body)
     out = bytearray(b'HTTP/1.0 200 OK\r\n')
     trail = request.cookies.get("trail")
     first_hit = False
@@ -61,7 +61,7 @@ def register_hit(request: Request, sock: socket.socket) -> bytes:
     sock.close()
     fields = [hit_id, trail, first_hit, request.remote_ip, request.rdns(),
               json.dumps(request.headers), request.body.decode()]
-    bits = ",".join(["%s" for f in fields])
+    bits = ",".join(["%s" or f for f in fields])
     query = "insert into latency.hits (id, trail, first_hit, remote_ip, rdns, headers, payload) values (%s)" % bits
     with get_con() as con:
         with con.cursor() as cur:
@@ -153,7 +153,7 @@ def record_observations(hit_id: int, observations: List) -> None:
             numpy.mean(observations), numpy.std(observations)]
     for i in [0, 1, 5, 25, 50, 75, 95, 99, 100]:
         vals.append(p(i))
-    bits = ",".join(["%s" for f in vals])
+    bits = ",".join(["%s" or f for f in vals])
     query = "insert into latency.latencies values (%s);" % bits
     with get_con() as con:
         with con.cursor() as cur:
@@ -183,7 +183,7 @@ def play_ping_pong(sock: socket.socket, request: Request):
             delay = ended - started
             if i:  # ignore first delay
                 observations.append(delay)
-                packed = struct.pack("d",delay)
+                packed = struct.pack("d", delay)
                 wss.send(packed, kind=BIN)
             time.sleep(0.1)
     finally:
