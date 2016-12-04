@@ -30,8 +30,10 @@ def main(forking=True):
                     register_hit(request=request, sock=sock)
                 elif request.requested_path == "/xhr/geo":
                     on_geo(request=request, sock=sock)
-                elif request.requested_path == "/check":
+                elif request.requested_path == "/dyn/check":
                     check(sock)
+                elif request.requested_path == "/dyn/echo":
+                    echo(request, sock)
                 else:
                     sock.sendall(request.serve())
                     sock.close()
@@ -55,6 +57,14 @@ def check(sock: socket.socket) -> None:
             else:
                 out = bytearray(b'HTTP/1.0 500 Internal Server Error\r\n\r\n')
                 out += b'Problem with DB\n'
+    sock.sendall(out)
+    sock.close()
+
+
+def echo(request: Request, sock: socket.socket) -> None:
+    body = bytes(request)
+    out = bytearray("HTTP/1.0 200 OK\r\nContent-length: %d\r\n\r\n" % len(body), encoding="ascii")
+    out += body
     sock.sendall(out)
     sock.close()
 
