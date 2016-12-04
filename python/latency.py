@@ -18,7 +18,7 @@ assert sys.version_info >= (3, 4)
 def main(forking=True):
     port = 1234
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    os.chdir("../latency.static")
+    os.chdir("../static")
     for sock, addr in listen(port=port, forking=forking):
         try:
             request = Request(sock=sock, remote_ip=addr[0], listening_port=port)
@@ -30,6 +30,8 @@ def main(forking=True):
                     register_hit(request=request, sock=sock)
                 elif request.requested_path == "/xhr/geo":
                     on_geo(request=request, sock=sock)
+                elif request.requested_path == "/check":
+                    check(sock)
                 else:
                     sock.sendall(request.serve())
                     sock.close()
@@ -41,7 +43,23 @@ def main(forking=True):
                 sys.exit(0)
 
 
-def register_hit(request: Request, sock: socket.socket) -> bytes:
+def check(sock: socket.socket) -> None:
+    query = "select 1+2 as three;"
+    with get_con() as con:
+        with con.cursor() as cur:
+            cur.execute(query)
+            rows = cur.fetchall()
+            if len(rows) == 1 and rows[0][0] == 3:
+                out = bytearray(b'HTTP/1.0 200 OK\r\n\r\n')
+                out += b'okay\n'
+            else:
+                out = bytearray(b'HTTP/1.0 500 Internal Server Error\r\n\r\n')
+                out += b'Problem with DB\n'
+    sock.sendall(out)
+    sock.close()
+
+
+def register_hit(request: Request, sock: socket.socket) -> None:
     # print("register_hit body=>%r" % request.body)
     out = bytearray(b'HTTP/1.0 200 OK\r\n')
     trail = request.cookies.get("trail")
