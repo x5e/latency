@@ -27,16 +27,16 @@ def main(forking=True):
                 play_ping_pong(sock, request)
             else:
                 if request.requested_path == "/xhr/hit":
-                    register_hit(request=request, sock=sock)
+                    out = register_hit(request=request)
                 elif request.requested_path == "/xhr/geo":
-                    on_geo(request=request, sock=sock)
+                    out = on_geo(request=request)
                 elif request.requested_path == "/dyn/check":
-                    check(sock)
+                    out = check()
                 elif request.requested_path == "/dyn/echo":
-                    echo(request, sock)
+                    out = echo(request)
                 else:
-                    sock.sendall(request.serve())
-                    sock.close()
+                    out = request.serve()
+                sock.sendall(out)
         except (ConnectionAbortedError, TimeoutError, ValueError, StopIteration):
             pass
         finally:
@@ -45,7 +45,7 @@ def main(forking=True):
                 sys.exit(0)
 
 
-def check(sock: socket.socket) -> None:
+def check() -> bytes:
     query = "select 1+2 as three;"
     with get_con() as con:
         with con.cursor() as cur:
@@ -57,19 +57,17 @@ def check(sock: socket.socket) -> None:
             else:
                 out = bytearray(b'HTTP/1.0 500 Internal Server Error\r\n\r\n')
                 out += b'Problem with DB\n'
-    sock.sendall(out)
-    sock.close()
+    return bytes(out)
 
 
-def echo(request: Request, sock: socket.socket) -> None:
+def echo(request: Request) -> bytes:
     body = bytes(request)
     out = bytearray("HTTP/1.0 200 OK\r\nContent-length: %d\r\n\r\n" % len(body), encoding="ascii")
     out += body
-    sock.sendall(out)
-    sock.close()
+    return bytes(out)
 
 
-def register_hit(request: Request, sock: socket.socket) -> None:
+def register_hit(request: Request) -> bytes:
     # print("register_hit body=>%r" % request.body)
     out = bytearray(b'HTTP/1.0 200 OK\r\n')
     trail = request.cookies.get("trail")
@@ -85,8 +83,6 @@ def register_hit(request: Request, sock: socket.socket) -> None:
     out += b'\r\n'
     hit_id = random.randint(WEB_MIN, WEB_MAX)
     out += str(hit_id).encode()
-    sock.sendall(out)
-    sock.close()
     fields = [hit_id, trail, first_hit, request.remote_ip, request.rdns(),
               json.dumps(request.headers), request.body.decode()]
     bits = ",".join(["%s" or f for f in fields])
@@ -94,9 +90,10 @@ def register_hit(request: Request, sock: socket.socket) -> None:
     with get_con() as con:
         with con.cursor() as cur:
             cur.execute(query, fields)
+    return bytes(out)
 
 
-def on_geo(request: Request, sock: socket.socket):
+def on_geo(request: Request) -> bytes:
     doubles = struct.unpack("d" * 10, request.body)
 
     lat = doubles[1]
@@ -141,7 +138,8 @@ def on_geo(request: Request, sock: socket.socket):
         with con.cursor() as cur:
             cur.execute(query, [lat, lon, lat, lon])
             rows = cur.fetchall()
-        out = """
+        out = 'HTTP/1.0 200 OK\r\n\r\n'
+        out += """
         <table>
         <tr><th>miles</th><th>ISP</th><th>quality</th><th>med.</th>
         """
@@ -157,8 +155,6 @@ def on_geo(request: Request, sock: socket.socket):
                         out += "<td>%s</td>" % field
             out += "</tr>"
         out += "</table>"
-        sock.sendall(out.encode())
-        sock.close()
 
         with con.cursor() as cur:
             query = """
@@ -168,6 +164,7 @@ def on_geo(request: Request, sock: socket.socket):
             """
             vals = list(doubles[0:9])
             cur.execute(query, vals)
+        return out.encode()
 
 
 def record_observations(hit_id: int, observations: List) -> None:
