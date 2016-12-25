@@ -17,6 +17,7 @@
 		932836681E0F1B7E00606AD3 /* WebSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 932836671E0F1B7E00606AD3 /* WebSocket.swift */; };
 		9328366A1E0F1B8600606AD3 /* SSLSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 932836691E0F1B8600606AD3 /* SSLSecurity.swift */; };
 		9328366C1E0F1C6C00606AD3 /* Connector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9328366B1E0F1C6C00606AD3 /* Connector.swift */; };
+		9328366E1E0F5B0C00606AD3 /* utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9328366D1E0F5B0C00606AD3 /* utilities.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +54,7 @@
 		932836671E0F1B7E00606AD3 /* WebSocket.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WebSocket.swift; sourceTree = "<group>"; };
 		932836691E0F1B8600606AD3 /* SSLSecurity.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SSLSecurity.swift; sourceTree = "<group>"; };
 		9328366B1E0F1C6C00606AD3 /* Connector.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Connector.swift; sourceTree = "<group>"; };
+		9328366D1E0F5B0C00606AD3 /* utilities.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = utilities.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,6 +114,7 @@
 				932836421E0F1A5100606AD3 /* LaunchScreen.storyboard */,
 				932836451E0F1A5100606AD3 /* Info.plist */,
 				9328366B1E0F1C6C00606AD3 /* Connector.swift */,
+				9328366D1E0F5B0C00606AD3 /* utilities.swift */,
 			);
 			path = latency;
 			sourceTree = "<group>";
@@ -271,6 +274,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9328366E1E0F5B0C00606AD3 /* utilities.swift in Sources */,
 				9328363C1E0F1A5100606AD3 /* ViewController.swift in Sources */,
 				932836681E0F1B7E00606AD3 /* WebSocket.swift in Sources */,
 				9328366A1E0F1B8600606AD3 /* SSLSecurity.swift in Sources */,
