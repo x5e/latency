@@ -16,7 +16,9 @@ class Connector: WebSocketDelegate {
         let target = "https://" + server + "/xhr/hit"
         var request = URLRequest(url: URL(string: target)!)
         request.httpMethod = "POST"
-        request.httpBody = "{}".data(using: .utf8)
+        let payload = toJson(map: deviceInfo())
+        print(payload)
+        request.httpBody = payload.data(using: .utf8)
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data, error == nil else {return onError("error=\(error)")}
             guard let httpStatus = response as? HTTPURLResponse else {return onError("wtf")}
@@ -44,7 +46,7 @@ class Connector: WebSocketDelegate {
         let d:Double = decode(data: data as NSData)
         observations.append(d)
         observations.sort()
-        show(d)
+        //show(d)
     }
     
     func quantile(_ p: Double) -> Double {
