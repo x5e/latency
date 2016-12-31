@@ -8,6 +8,25 @@ func decode<T>(data: NSData) -> T {
     return pointer.move()
 }
 
+func toHuman(_ d: Double) -> String {
+    var out = ""
+    if d < 1 {
+        out = String(format: "%.1f", d * 1000)
+        while out.characters.count < 6 {
+            out = " " + out
+        }
+        out += " millis"
+    }
+    if d >= 1 {
+        out = String(format: "%.1f", d)
+        while out.characters.count < 6 {
+            out = " " + out
+        }
+        out += " second"
+    }
+    return out
+}
+
 func encode<T>(arg: T) -> NSData {
     var value = arg
     return withUnsafePointer(to: &value) { p in
