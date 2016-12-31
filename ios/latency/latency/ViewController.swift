@@ -1,10 +1,14 @@
 import UIKit
+import CoreLocation
 
-class ViewController: UIViewController, Watcher {
+class ViewController: UIViewController, Watcher, CLLocationManagerDelegate {
 
     @IBOutlet weak var dist: UILabel!
     var loaded = false
     var connector: Connector?
+    var locationManager = CLLocationManager()
+    var location: CLLocation?
+    var waiting = false
     
     @IBAction func restart() {
         if let prior = connector {
@@ -21,7 +25,7 @@ class ViewController: UIViewController, Watcher {
         guard loaded else { return }
         var val = ""
         if sender.observations.count == 0 {
-            val = "connecting..."
+            val = sender.state
         } else {
             val += "    Round Trip Times  \n\n"
             val += "   min:" + toHuman(sender.quantile(0)) + "\n"
@@ -36,7 +40,7 @@ class ViewController: UIViewController, Watcher {
             }
             val += c + " observations\n"
             if !sender.connected {
-                val += "               done!"
+                val += "                done"
             }
             val += "\n\n\n"
         }
@@ -47,12 +51,28 @@ class ViewController: UIViewController, Watcher {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         loaded = true
-        restart()
+        
+        if (CLLocationManager.locationServicesEnabled())
+        {
+            locationManager.delegate = self
+            locationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
+            locationManager.requestWhenInUseAuthorization()
+            locationManager.startUpdatingLocation()
+            waiting = true
+            dist.text = "getting location..."
+        } else {
+            restart()
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation])
+    {
+        location = locations.last! as CLLocation
+        if waiting {
+            waiting = false
+            restart()
+        }
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
 }
 

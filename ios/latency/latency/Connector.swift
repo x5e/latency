@@ -7,14 +7,12 @@ protocol Watcher {
 class Connector: WebSocketDelegate {
     var soc: WebSocket? = nil
     var observations: [Double] = []
-    let server: String
     var trail: Int?
     var watchers: [Watcher] = []
     var connected = false
+    var state = "created"
+    var server = "latency.x5e.qa"
     
-    init(server: String = "latency.x5e.qa") {
-        self.server = server
-    }
     
     func stop() {
         watchers = []
@@ -35,6 +33,7 @@ class Connector: WebSocketDelegate {
             guard httpStatus.statusCode == 200 else { return onError("statusCode is \(httpStatus.statusCode)")}
             guard let responseString = String(data: data, encoding: .utf8) else {return onError("no responseString?")}
             guard let hitId = Int64(responseString) else {return onError("not a hitId \(responseString)")}
+            self.state = "started"
             self.connect(hitId)
         }
         task.resume()
