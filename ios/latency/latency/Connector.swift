@@ -1,4 +1,5 @@
 import Foundation
+import CoreLocation
 
 protocol Watcher {
     func onUpdate(sender: Connector)
@@ -19,14 +20,23 @@ class Connector: WebSocketDelegate {
         soc?.disconnect()
     }
     
-    func start() {
+    func start(_ oloc: CLLocation?) {
         // largely copied from http://stackoverflow.com/questions/26364914/http-request-in-swift-with-post-method
         let target = "https://" + server + "/xhr/hit"
         var request = URLRequest(url: URL(string: target)!)
         request.httpMethod = "POST"
-        let payload = toJson(map: deviceInfo())
+        var payload = deviceInfo()
+        if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
+            payload["app_version"] = version
+        }
+        if let loc = oloc {
+            payload["latitude"] = loc.coordinate.latitude
+            payload["longitude"] = loc.coordinate.longitude
+            payload["accuracy"] = loc.horizontalAccuracy
+            payload["loc_ts"] = String(describing: loc.timestamp)
+        }
         print(payload)
-        request.httpBody = payload.data(using: .utf8)
+        request.httpBody = toJson(map: payload).data(using: .utf8)
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data, error == nil else {return onError("error=\(error)")}
             guard let httpStatus = response as? HTTPURLResponse else {return onError("wtf")}

@@ -17,7 +17,7 @@ class ViewController: UIViewController, Watcher, CLLocationManagerDelegate {
         dist.text = "started"
         connector = Connector()
         connector!.watchers.append(self)
-        connector!.start()
+        connector!.start(location)
         self.onUpdate(sender: connector!)
     }
     
@@ -73,6 +73,13 @@ class ViewController: UIViewController, Watcher, CLLocationManagerDelegate {
             restart()
         }
     }
-
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError: Error)
+    {
+        if waiting {
+            waiting = false
+            restart()
+        }
+    }
 }
 
