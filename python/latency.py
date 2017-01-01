@@ -183,12 +183,12 @@ def record_observations(hit_id: int, observations: List) -> None:
     with get_con() as con:
         with con.cursor() as cur:
             cur.execute(query, vals)
-    sys.stderr.write("%d observations for %s\n" % (len(observations), hit_id))
 
 
 def play_ping_pong(sock: socket.socket, request: Request):
+    print("connection from: ", request.remote_ip)
     hit_id = int(request.query_string)
-    if not (WEB_MIN <= hit_id <= WEB_MAX):
+    if not (WEB_MIN <= hit_id <= WEB_MAX + 1):
         sock.sendall(b"HTTP/1.0 400 USER_ERROR\r\n\r\n")
         sock.close()
         return
@@ -196,6 +196,7 @@ def play_ping_pong(sock: socket.socket, request: Request):
     observations = list()
     try:
         for i in range(201):
+            time.sleep(0.1)
             msg = hex(random.randint(WEB_MIN, WEB_MAX)).encode()
             wss.send(msg, kind=TEXT)
             started = time.time()
@@ -203,17 +204,20 @@ def play_ping_pong(sock: socket.socket, request: Request):
             ended = time.time()
             if not len(packets) == 1:
                 raise ConnectionAbortedError()
-            if packets[0] != msg:
-                raise ValueError()
             delay = ended - started
+            if packets[0] == msg:
+                print("good message in", delay)
+            else:
+                print("bad msg")
+                raise ValueError()
             if i:  # ignore first delay
                 observations.append(delay)
                 packed = struct.pack("d", delay)
                 wss.send(packed, kind=BIN)
-            time.sleep(0.1)
     finally:
         wss.close()
-        if len(observations) > 2 and re.fullmatch(r"\d+", request.query_string):
+        print("%d observations for %s\n" % (len(observations), hex(hit_id)))
+        if len(observations) > 2 and hit_id <= forker.WEB_MAX:
             record_observations(hit_id, observations)
 
 
