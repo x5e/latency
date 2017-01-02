@@ -1,55 +1,72 @@
 import Foundation
 import CoreLocation
 
-protocol Watcher {
-    func onUpdate(sender: Connector)
-}
 
 class Connector: WebSocketDelegate {
     var soc: WebSocket? = nil
     var observations: [Double] = []
+    var sorted: [Double] = []
     var trail: Int?
-    var watchers: [Watcher] = []
     var connected = false
-    var state = "created"
+    var state = "Created"
     var server = "latency.x5e.qa"
-    
+    var remoteName: String?
+    var updates = 0
+    //var hitId: Int64 = 9007199254740992
+    var oHitId: Int64?
     
     func stop() {
-        watchers = []
         soc?.disconnect()
     }
     
-    func start(_ oloc: CLLocation?) {
+    func distances(_ loc: CLLocation) -> TopMap {
+        print(loc)
+        var out = TopMap()
+        out["us-west-1"] = loc.distance(from: CLLocation(latitude: 37, longitude: -122))/1e3
+        out["us-east-1"] = loc.distance(from: CLLocation(latitude: 37, longitude: -78))/1e3
+        out["us-east-2"] = loc.distance(from: CLLocation(latitude: 40, longitude: -83))/1e3
+        out["us-west-2"] = loc.distance(from: CLLocation(latitude: 46, longitude: -122))/1e3
+        //print(out)
+        return out
+    }
+    
+    func knock(from: CLLocation?) {
+
+        
         // largely copied from http://stackoverflow.com/questions/26364914/http-request-in-swift-with-post-method
-        let target = "https://" + server + "/xhr/hit"
-        var request = URLRequest(url: URL(string: target)!)
-        request.httpMethod = "POST"
+        let target = "https://" + server + "/xhr/knock"
         var payload = deviceInfo()
         if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
             payload["app_version"] = version
         }
-        if let loc = oloc {
+        if let loc = from {
             payload["latitude"] = loc.coordinate.latitude
             payload["longitude"] = loc.coordinate.longitude
             payload["accuracy"] = loc.horizontalAccuracy
             payload["loc_ts"] = String(describing: loc.timestamp)
+            payload["distances"] = distances(loc)
         }
+        payload["server"] = server
         print(payload)
-        request.httpBody = toJson(map: payload).data(using: .utf8)
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data, error == nil else {return onError("error=\(error)")}
-            guard let httpStatus = response as? HTTPURLResponse else {return onError("wtf")}
-            guard httpStatus.statusCode == 200 else { return onError("statusCode is \(httpStatus.statusCode)")}
-            guard let responseString = String(data: data, encoding: .utf8) else {return onError("no responseString?")}
-            guard let hitId = Int64(responseString) else {return onError("not a hitId \(responseString)")}
-            self.state = "started"
-            self.connect(hitId)
-        }
-        task.resume()
+        update("Knocking...")
+        post(url: target, map: payload, cb: {self.onAnswer($0)}, onError: {self.update($0)})
     }
-
-    func connect(_ hitId: Int64 = 9007199254740992) {
+    
+    func onAnswer(_ thing: Any) {
+        if let map = thing as? NSDictionary {
+            oHitId = ((map["hit_id"] as? NSNumber) as? Int64)
+            server = (map["server"] as? String) ?? server
+            remoteName = (map["name"] as? String)
+        }
+        connect()
+        //guard let hitId = Int64(responseString) else {return onError("not a hitId \(responseString)")}
+    }
+    
+    func connect() {
+        // print(oHitId ?? "no hitId")
+        // print(server)
+        guard let hitId = oHitId else { return update("No hitId?") }
+        update("Connecting...")
         let target = "wss://\(server)/websocket?\(hitId)"
         soc = WebSocket(url: URL(string: target)!)
         soc!.delegate = self
@@ -58,14 +75,14 @@ class Connector: WebSocketDelegate {
     
     func websocketDidConnect(socket: WebSocket) {
         connected = true
-        print("websocket is connected")
-        notify()
+        //print("websocket is connected")
+        update("Connected")
     }
     
     func websocketDidDisconnect(socket: WebSocket, error: NSError?) {
         connected = false
-        print("websocket is disconnected: \(error?.localizedDescription)")
-        notify()
+        //print("websocket is disconnected: \(error?.localizedDescription)")
+        update("Disconnected")
     }
     
     func websocketDidReceiveMessage(socket: WebSocket, text: String) {
@@ -76,15 +93,16 @@ class Connector: WebSocketDelegate {
         //print("got some data: \(data.count)")
         let d:Double = decode(data: data as NSData)
         observations.append(d)
-        observations.sort()
+        sorted.append(d)
+        sorted.sort()
         // show(d)
-        notify()
+        update()
     }
     
     func quantile(_ p: Double) -> Double {
-        guard observations.count > 0 else { return Double.nan }
-        let index = Int(round(p * Double(observations.count-1)))
-        return observations[index]
+        guard sorted.count > 0 else { return Double.nan }
+        let index = Int(round(p * Double(sorted.count-1)))
+        return sorted[index]
     }
     
     func show(_ d: Double) {
@@ -92,9 +110,8 @@ class Connector: WebSocketDelegate {
         print(x)
     }
     
-    func notify() {
-        for watcher in watchers {
-            watcher.onUpdate(sender: self)
-        }
+    func update(_ ostatus: String? = nil) {
+        updates += 1
+        state = ostatus ?? state
     }
 }

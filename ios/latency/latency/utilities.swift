@@ -34,11 +34,6 @@ func encode<T>(arg: T) -> NSData {
     }
 }
 
-func onError(_ msg: String? = nil) {
-    let msg1 = msg ?? "someting went wrong"
-    print(msg1)
-}
-
 public extension UIDevice {
     var modelName: String {
         var systemInfo = utsname()
@@ -119,15 +114,20 @@ func deviceInfo() -> [String: Any] {
 }
 
 typealias Json = String
+typealias Handler = (String) -> Void
+typealias CallBack = (Any) -> Void
+typealias TopMap = [String: Any]
 
-func toJson(thing: Any) -> Json {
+func toJson(thing: Any?) -> Json {
     if let i = thing as? Int {return String(i)}
     if let s = thing as? String { return "\"\(s)\"" }
     if let f = thing as? Float { return "\(f)" }
-    return "\(thing)"
+    if let m = thing as? TopMap { return toJson(map: m) }
+    guard let real = thing else { return "null" }
+    return "\(real)"
 }
 
-func toJson(map: [String: Any]) -> Json {
+func toJson(map: TopMap) -> Json {
     var out = "{"
     var first = true
     for (k,v) in map {
@@ -139,4 +139,29 @@ func toJson(map: [String: Any]) -> Json {
     }
     out += "}"
     return out
+}
+
+func noOp(x: Any?) {}
+func printError(_ msg: String?) {
+    print(msg ?? "nil")
+}
+
+func post(url: String, map: TopMap, cb: @escaping CallBack, onError: @escaping Handler = printError) {
+    var request = URLRequest(url: URL(string: url)!)
+    request.httpMethod = "POST"
+    request.httpBody = toJson(map: map).data(using: .utf8)
+    let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        guard let data = data, error == nil else {return onError("error=\(error)")}
+        guard let httpStatus = response as? HTTPURLResponse else {return onError("not a HTTPURLResponse")}
+        guard httpStatus.statusCode == 200 else { return onError("statusCode is \(httpStatus.statusCode)")}
+        //guard let responseString = String(data: data, encoding: .utf8) else {return onError("no responseString?")}
+        do {
+            cb(try JSONSerialization.jsonObject(with: data))
+        } catch {
+            print("bad Json:")
+            print(String(data: data, encoding: .utf8) ?? "<empty>")
+            return onError("Json Problem")
+        }
+    }
+    task.resume()
 }
