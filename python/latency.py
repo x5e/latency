@@ -13,6 +13,8 @@ import socket
 import json
 
 assert sys.version_info >= (3, 4)
+PGHOST = os.environ.get("PGHOST")
+assert PGHOST
 
 
 def main(forking=True):
@@ -253,7 +255,7 @@ def play_ping_pong(sock: socket.socket, request: Request):
 
 def get_con():
     return psycopg2.connect(
-        host="localhost",
+        host=PGHOST,
         database="latency",
         user="doorman",
         password="doorman",
