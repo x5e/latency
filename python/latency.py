@@ -28,6 +28,8 @@ def main(forking=True):
             else:
                 if request.requested_path == "/xhr/hit":
                     out = register_hit(request=request)
+                elif request.requested_path == "/xhr/knock":
+                    out = knock(request=request)
                 elif request.requested_path == "/xhr/geo":
                     out = on_geo(request=request)
                 elif request.requested_path == "/dyn/check":
@@ -85,6 +87,34 @@ def register_hit(request: Request) -> bytes:
     out += str(hit_id).encode()
     fields = [hit_id, trail, first_hit, request.remote_ip, request.rdns(),
               json.dumps(request.headers), request.body.decode()]
+    bits = ",".join(["%s" or f for f in fields])
+    query = "insert into latency.hits (id, trail, first_hit, remote_ip, rdns, headers, payload) values (%s)" % bits
+    with get_con() as con:
+        with con.cursor() as cur:
+            cur.execute(query, fields)
+    return bytes(out)
+
+def knock(request: Request) -> bytes:
+    print("knock body=>%r" % request.body)
+    out = bytearray(b'HTTP/1.0 200 OK\r\n')
+    trail = request.cookies.get("trail")
+    first_hit = False
+    if not trail:
+        trail = random.randint(WEB_MIN, WEB_MAX)
+        # expires= path=/
+        out += ("Set-Cookie: trail=%d; Expires=Wed, 29 Oct 2037 05:46:09 UTC; Path=/;" % trail).encode()
+        if "x5e.com" in request.headers.get("host", "").lower():
+            out += b" domain=x5e.com;"
+        out += b'\r\n'
+        first_hit = True
+    out += b'\r\n'
+    hit_id = random.randint(WEB_MIN, WEB_MAX)
+    received = json.loads(request.body.decode())
+    sending = json.dumps(dict(hit_id=hit_id, server=received["server"], name="us-east-1")).encode()
+    #sys.stdout.write(sending)
+    out += sending
+    fields = [hit_id, trail, first_hit, request.remote_ip, request.rdns(),
+              json.dumps(request.headers), json.dumps(received)]
     bits = ",".join(["%s" or f for f in fields])
     query = "insert into latency.hits (id, trail, first_hit, remote_ip, rdns, headers, payload) values (%s)" % bits
     with get_con() as con:
@@ -206,7 +236,7 @@ def play_ping_pong(sock: socket.socket, request: Request):
                 raise ConnectionAbortedError()
             delay = ended - started
             if packets[0] == msg:
-                print("good message in", delay)
+                pass #print("good message in", delay)
             else:
                 print("bad msg")
                 raise ValueError()
