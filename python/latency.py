@@ -96,6 +96,7 @@ def register_hit(request: Request) -> bytes:
             cur.execute(query, fields)
     return bytes(out)
 
+
 def knock(request: Request) -> bytes:
     print("knock body=>%r" % request.body)
     out = bytearray(b'HTTP/1.0 200 OK\r\n')
@@ -112,8 +113,11 @@ def knock(request: Request) -> bytes:
     out += b'\r\n'
     hit_id = random.randint(WEB_MIN, WEB_MAX)
     received = json.loads(request.body.decode())
-    sending = json.dumps(dict(hit_id=hit_id, server=received["server"], name="us-east-1")).encode()
-    #sys.stdout.write(sending)
+    server = "us-east-1.x5e.com"
+    if received.get("distances",{}).get("us-west-1",1e9) < received.get("distances",{}).get("us-east-1",1e9):
+        server = "us-west-1.x5e.com"
+    sending = json.dumps(dict(hit_id=hit_id, server=server, name=server)).encode()
+    # sys.stdout.write(sending)
     out += sending
     fields = [hit_id, trail, first_hit, request.remote_ip, request.rdns(),
               json.dumps(request.headers), json.dumps(received)]
