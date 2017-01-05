@@ -9,7 +9,7 @@ class Connector: WebSocketDelegate {
     var trail: Int?
     var connected = false
     var state = "Created"
-    var server = "latency.x5e.qa"
+    var server = "latency.x5e.com"
     var remoteName: String?
     var updates = 0
     //var hitId: Int64 = 9007199254740992
