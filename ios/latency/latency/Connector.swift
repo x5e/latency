@@ -26,15 +26,15 @@ class Connector: WebSocketDelegate {
         out["us-east-1"] = loc.distance(from: CLLocation(latitude: 37, longitude: -78))/1e3
         out["us-east-2"] = loc.distance(from: CLLocation(latitude: 40, longitude: -83))/1e3
         out["us-west-2"] = loc.distance(from: CLLocation(latitude: 46, longitude: -122))/1e3
+        out["nearby-ny"] = loc.distance(from: CLLocation(latitude: 41, longitude: -74))/1e3
         //print(out)
         return out
     }
     
     func knock(from: CLLocation?) {
 
-        
         // largely copied from http://stackoverflow.com/questions/26364914/http-request-in-swift-with-post-method
-        let target = "https://" + server + "/xhr/knock"
+        let target = "https://" + server + "/latency/xhr/knock"
         var payload = deviceInfo()
         if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
             payload["app_version"] = version
@@ -67,7 +67,7 @@ class Connector: WebSocketDelegate {
         // print(server)
         guard let hitId = oHitId else { return update("No hitId?") }
         update("Connecting...")
-        let target = "wss://\(server)/websocket?\(hitId)"
+        let target = "wss://\(server)/latency/websocket?\(hitId)"
         soc = WebSocket(url: URL(string: target)!)
         soc!.delegate = self
         soc!.connect()

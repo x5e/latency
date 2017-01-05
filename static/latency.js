@@ -188,7 +188,7 @@ function main(arg) {
     var prot = "ws:";
     if (window.location.protocol == "https:")
         prot = "wss:";
-    var target = prot + "//" + window.location.host + "/websocket?" + hit_id;
+    var target = prot + "//" + window.location.host + "/latency/websocket?" + hit_id;
     console.log(target);
     // target = "ws://localhost:4321/";
     var websocket = new WebSocket(target);

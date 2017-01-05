@@ -28,15 +28,15 @@ def main(forking=True):
             if request.headers.get("upgrade") == "websocket":
                 play_ping_pong(sock, request)
             else:
-                if request.requested_path == "/xhr/hit":
+                if request.requested_path.endswith("xhr/hit"):
                     out = register_hit(request=request)
-                elif request.requested_path == "/xhr/knock":
+                elif request.requested_path.endswith("/xhr/knock"):
                     out = knock(request=request)
-                elif request.requested_path == "/xhr/geo":
+                elif request.requested_path.endswith("/xhr/geo"):
                     out = on_geo(request=request)
-                elif request.requested_path == "/dyn/check":
+                elif request.requested_path.endswith("/dyn/check"):
                     out = check()
-                elif request.requested_path == "/dyn/echo":
+                elif request.requested_path.endswith("/dyn/echo"):
                     out = echo(request)
                 else:
                     out = request.serve()
@@ -249,7 +249,7 @@ def play_ping_pong(sock: socket.socket, request: Request):
     finally:
         wss.close()
         print("%d observations for %s\n" % (len(observations), hex(hit_id)))
-        if len(observations) > 2 and hit_id <= forker.WEB_MAX:
+        if len(observations) > 2 and hit_id <= WEB_MAX:
             record_observations(hit_id, observations)
 
 
