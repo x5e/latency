@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		9308CB981E17B9A800750846 /* rounding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9308CB971E17B9A800750846 /* rounding.swift */; };
+		930DBF181E1F9FE700AE0B7A /* AppIcon.appiconset in Resources */ = {isa = PBXBuildFile; fileRef = 930DBF171E1F9FE700AE0B7A /* AppIcon.appiconset */; };
 		9328363A1E0F1A5100606AD3 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 932836391E0F1A5100606AD3 /* AppDelegate.swift */; };
 		9328363C1E0F1A5100606AD3 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9328363B1E0F1A5100606AD3 /* ViewController.swift */; };
 		9328363F1E0F1A5100606AD3 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9328363D1E0F1A5100606AD3 /* Main.storyboard */; };
@@ -40,6 +41,7 @@
 
 /* Begin PBXFileReference section */
 		9308CB971E17B9A800750846 /* rounding.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = rounding.swift; sourceTree = "<group>"; };
+		930DBF171E1F9FE700AE0B7A /* AppIcon.appiconset */ = {isa = PBXFileReference; lastKnownFileType = folder; path = AppIcon.appiconset; sourceTree = "<group>"; };
 		932836361E0F1A5100606AD3 /* latency.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = latency.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		932836391E0F1A5100606AD3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9328363B1E0F1A5100606AD3 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -107,6 +109,7 @@
 		932836381E0F1A5100606AD3 /* latency */ = {
 			isa = PBXGroup;
 			children = (
+				930DBF171E1F9FE700AE0B7A /* AppIcon.appiconset */,
 				932836691E0F1B8600606AD3 /* SSLSecurity.swift */,
 				932836671E0F1B7E00606AD3 /* WebSocket.swift */,
 				932836391E0F1A5100606AD3 /* AppDelegate.swift */,
@@ -250,6 +253,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				930DBF181E1F9FE700AE0B7A /* AppIcon.appiconset in Resources */,
 				932836441E0F1A5100606AD3 /* LaunchScreen.storyboard in Resources */,
 				932836411E0F1A5100606AD3 /* Assets.xcassets in Resources */,
 				9328363F1E0F1A5100606AD3 /* Main.storyboard in Resources */,
