@@ -1,13 +1,13 @@
 import Foundation
 import CoreLocation
-
+import NotificationCenter
 
 class Connector: WebSocketDelegate {
     var soc: WebSocket? = nil
     var observations: [Double] = []
     var sorted: [Double] = []
     var trail: Int?
-    var connected = false
+    var active = false
     var state = "Created"
     var server = "latency.x5e.com"
     var remoteName: String?
@@ -20,7 +20,7 @@ class Connector: WebSocketDelegate {
     }
     
     func distances(_ loc: CLLocation) -> TopMap {
-        print(loc)
+        // print(loc)
         var out = TopMap()
         out["us-west-1"] = loc.distance(from: CLLocation(latitude: 37, longitude: -122))/1e3
         out["us-east-1"] = loc.distance(from: CLLocation(latitude: 37, longitude: -78))/1e3
@@ -47,7 +47,7 @@ class Connector: WebSocketDelegate {
             payload["distances"] = distances(loc)
         }
         payload["server"] = server
-        print(payload)
+        // print(payload)
         update("Knocking...")
         post(url: target, map: payload, cb: {self.onAnswer($0)}, onError: {self.update($0)})
     }
@@ -73,20 +73,38 @@ class Connector: WebSocketDelegate {
         soc!.connect()
     }
     
+    func register() {
+        _ = NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(onBg),
+            name: Notification.Name.UIApplicationWillResignActive,
+            object: nil)
+        
+    }
+    
+    @objc func onBg() {
+        active = false
+        update("Lost Focus")
+        soc?.disconnect(forceTimeout: 0.00001)
+    }
+    
     func websocketDidConnect(socket: WebSocket) {
-        connected = true
+        active = true
         //print("websocket is connected")
+        register()
         update("Connected")
     }
     
     func websocketDidDisconnect(socket: WebSocket, error: NSError?) {
-        connected = false
-        //print("websocket is disconnected: \(error?.localizedDescription)")
-        update("Disconnected")
+        active = false
+        print("websocket is disconnected: \(error?.localizedDescription)")
+        update("Done")
     }
     
     func websocketDidReceiveMessage(socket: WebSocket, text: String) {
-        socket.write(string: text)
+        if active {
+            socket.write(string: text)
+        }
     }
     
     func websocketDidReceiveData(socket: WebSocket, data: Data) {
@@ -113,5 +131,7 @@ class Connector: WebSocketDelegate {
     func update(_ ostatus: String? = nil) {
         updates += 1
         state = ostatus ?? state
+        let x = Notification(name:NSNotification.Name(rawValue: "thump"), object: nil, userInfo: [:])
+        NotificationCenter.default.post(x)
     }
 }

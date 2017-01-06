@@ -1,5 +1,6 @@
 import UIKit
 import CoreLocation
+import NotificationCenter
 
 class ViewController: UIViewController, CLLocationManagerDelegate {
 
@@ -11,10 +12,23 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
     var waiting = false
     var timer: Timer?
     var last = 0
+    let center = NotificationCenter.default
+    var observer: NSObjectProtocol?
+    
+    func onNotification(_ n: Notification) {
+        // print("on notification")
+        breathe()
+    }
     
     @IBAction func restart() {
         if let prior = connector {
             prior.stop()
+        }
+        if observer == nil {
+            observer = center.addObserver(
+                forName: NSNotification.Name(rawValue: "thump"),
+                object: nil, queue: OperationQueue.main,
+                using: {self.onNotification($0)})
         }
         connector = Connector()
         onUpdate(sender: connector!)
@@ -23,7 +37,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         if let t = timer {
             t.invalidate()
         }
+        /*
         timer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(ViewController.breathe), userInfo:nil, repeats: true)
+        */
     }
     
     func breathe() {
@@ -54,20 +70,18 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
                 val += "\n"
             }
             val += "\n"
-            val += " min:" + toHuman(sender.quantile(0)) + "\n"
-            val += " med:" + toHuman(sender.quantile(0.5)) + "\n"
+            val += " Min:" + toHuman(sender.quantile(0)) + "\n"
+            val += " Med:" + toHuman(sender.quantile(0.5)) + "\n"
             val += "75th:" + toHuman(sender.quantile(0.75)) + "\n"
             val += "95th:" + toHuman(sender.quantile(0.95)) + "\n"
             val += "99th:" + toHuman(sender.quantile(0.99)) + "\n"
-            val += " max:" + toHuman(sender.quantile(1.0)) + "\n\n"
+            val += " Max:" + toHuman(sender.quantile(1.0)) + "\n\n"
             var c = String(sender.observations.count)
             while c.characters.count < 7 {
                 c = " " + c
             }
-            val += c + " observations\n"
-            if !sender.connected {
-                val += "                done"
-            }
+            val += c + " Observations\n"
+            val += sender.state
             val += "\n\n\n"
         }
         dist.text = val
