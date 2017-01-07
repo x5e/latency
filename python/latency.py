@@ -265,6 +265,7 @@ def get_con():
         database="latency",
         user="doorman",
         password="doorman",
+        connect_timeout=1,
         port=5432)
 
 
