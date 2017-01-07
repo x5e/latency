@@ -8,9 +8,9 @@ import time
 import struct
 import numpy
 import psycopg2
-import re
 import socket
 import json
+from subprocess import Popen, PIPE
 
 assert sys.version_info >= (3, 4)
 PGHOST = os.environ.get("PGHOST")
@@ -28,10 +28,12 @@ def main(forking=True):
             if request.headers.get("upgrade") == "websocket":
                 play_ping_pong(sock, request)
             else:
-                if request.requested_path.endswith("xhr/hit"):
+                if request.requested_path.endswith("/xhr/hit"):
                     out = register_hit(request=request)
                 elif request.requested_path.endswith("/xhr/knock"):
                     out = knock(request=request)
+                elif request.requested_path.endswith("/xhr/email"):
+                    out = send_email(request=request)
                 elif request.requested_path.endswith("/xhr/geo"):
                     out = on_geo(request=request)
                 elif request.requested_path.endswith("/dyn/check"):
@@ -114,7 +116,7 @@ def knock(request: Request) -> bytes:
     hit_id = random.randint(WEB_MIN, WEB_MAX)
     received = json.loads(request.body.decode())
     server = "us-east-1.x5e.com"
-    if received.get("distances",{}).get("us-west-1",1e9) < received.get("distances",{}).get("us-east-1",1e9):
+    if received.get("distances", {}).get("us-west-1", 1e9) < received.get("distances", {}).get("us-east-1", 1e9):
         server = "us-west-1.x5e.com"
     sending = json.dumps(dict(hit_id=hit_id, server=server, name=server)).encode()
     # sys.stdout.write(sending)
@@ -242,7 +244,7 @@ def play_ping_pong(sock: socket.socket, request: Request):
                 raise ConnectionAbortedError()
             delay = ended - started
             if packets[0] == msg:
-                pass #print("good message in", delay)
+                pass  # print("good message in", delay)
             else:
                 print("bad msg")
                 raise ValueError()
@@ -264,6 +266,22 @@ def get_con():
         user="doorman",
         password="doorman",
         port=5432)
+
+
+def send_email(request: Request) -> bytes:
+    to = "contact@x5e.com"
+    subject = "message from contact form"
+    p = Popen("mail %s -s '%s'" % (to, subject),stdin=PIPE, shell=True)
+    p.communicate(request.body)
+    if p.returncode != 0:
+        raise Exception("problem sending mail")
+    out = bytearray(b'HTTP/1.0 200 OK\r\n')
+    out += b"\r\n"
+    out += b'"SENT!"'
+    return bytes(out)
+
+
+
 
 if __name__ == "__main__":
     main(forking=("nofork" not in sys.argv))

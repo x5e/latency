@@ -56,7 +56,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
         if sender.observations.count == 0 {
             val = sender.state
         } else {
-            val += "Round Trip Times\n"
+            val += "Round Trip Times to\n"
             val += (sender.remoteName ?? "") + "\n\n"
             
             var i = sender.observations.count
