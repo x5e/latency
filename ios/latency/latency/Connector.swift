@@ -49,7 +49,12 @@ class Connector: WebSocketDelegate {
         payload["server"] = server
         // print(payload)
         update("Knocking...")
-        post(url: target, map: payload, cb: {self.onAnswer($0)}, onError: {self.update($0)})
+        post(
+            url: target,
+            map: payload,
+            cb: {self.onAnswer($0)},
+            onError: {self.update("Offline"); print($0)}
+        )
     }
     
     func onAnswer(_ thing: Any) {
