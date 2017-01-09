@@ -205,7 +205,16 @@ def on_geo(request: Request) -> bytes:
         return out.encode()
 
 
-def record_observations(hit_id: int, observations: List) -> None:
+def q(x):
+    if x is None:
+        return "NULL"
+    if isinstance(x, (int, float)):
+        return str(x)
+    if isinstance(x, str):
+        return "'%s'" % x
+
+
+def record_observations(hit_id: int, observations: List, requested: str) -> None:
     observations.sort()
 
     def p(x):
@@ -216,7 +225,9 @@ def record_observations(hit_id: int, observations: List) -> None:
             numpy.mean(observations), numpy.std(observations)]
     for i in [0, 1, 5, 25, 50, 75, 95, 99, 100]:
         vals.append(p(i))
-    bits = ",".join(["%s" or f for f in vals])
+    vals.append(requested)
+    vals.append(socket.gethostname())
+    bits = ",".join([q(f) for f in vals])
     query = "insert into latency.latencies values (%s);" % bits
     with get_con() as con:
         with con.cursor() as cur:
@@ -256,7 +267,7 @@ def play_ping_pong(sock: socket.socket, request: Request):
         wss.close()
         print("%d observations for %s\n" % (len(observations), hex(hit_id)))
         if len(observations) > 2 and hit_id <= WEB_MAX:
-            record_observations(hit_id, observations)
+            record_observations(hit_id, observations, request.headers.get("host"))
 
 
 def get_con():
@@ -272,7 +283,7 @@ def get_con():
 def send_email(request: Request) -> bytes:
     to = "contact@x5e.com"
     subject = "message from contact form"
-    p = Popen("mail %s -s '%s'" % (to, subject),stdin=PIPE, shell=True)
+    p = Popen("mail %s -s '%s'" % (to, subject), stdin=PIPE, shell=True)
     p.communicate(request.body)
     if p.returncode != 0:
         raise Exception("problem sending mail")
@@ -280,8 +291,6 @@ def send_email(request: Request) -> bytes:
     out += b"\r\n"
     out += b'"SENT!"'
     return bytes(out)
-
-
 
 
 if __name__ == "__main__":
