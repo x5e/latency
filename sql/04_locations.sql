@@ -1,4 +1,4 @@
-create table latency.locations (
+create table if not exists latency.locations (
     ts          TIMESTAMPTZ default now(),
     hit         BIGINT PRIMARY KEY,
     latitude    DOUBLE PRECISION,
