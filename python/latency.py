@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from forker import *
-from typing import List
+from typing import List, Any
 import os
 import sys
 import random
@@ -15,6 +15,8 @@ from subprocess import Popen, PIPE
 assert sys.version_info >= (3, 4)
 PGHOST = os.environ.get("PGHOST")
 assert PGHOST
+PGDATABASE = os.environ.get("PGDATABASE")
+assert PGDATABASE
 
 
 def main(forking=True):
@@ -222,7 +224,7 @@ def record_observations(hit_id: int, observations: List, requested: str) -> None
         return observations[n]
 
     vals = [int(hit_id), len(observations),
-            numpy.mean(observations), numpy.std(observations)]
+            numpy.mean(observations), numpy.std(observations)]  # type: List[Any]
     for i in [0, 1, 5, 25, 50, 75, 95, 99, 100]:
         vals.append(p(i))
     vals.append(requested)
@@ -273,7 +275,7 @@ def play_ping_pong(sock: socket.socket, request: Request):
 def get_con():
     return psycopg2.connect(
         host=PGHOST,
-        database="latency",
+        database=PGDATABASE,
         user="doorman",
         password="doorman",
         connect_timeout=1,

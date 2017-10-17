@@ -17,7 +17,7 @@ function register_hit() {
 }
 
 function whack(url, data, cb, on_err, on_timeout) {
-    if (typeof(data) != "string" && data && ! data.byteLength) {
+    if (typeof(data) !== "string" && data && ! data.byteLength) {
         data = JSON.stringify(data);
     }
     var request = new XMLHttpRequest();
@@ -28,8 +28,8 @@ function whack(url, data, cb, on_err, on_timeout) {
         console.error("timeout hitting: " + url);
     };
     request.onreadystatechange = function() {
-        if (request.readyState != 4) return;
-        if (request.status == 200) {
+        if (request.readyState !== 4) return;
+        if (request.status === 200) {
             if (cb) cb(request.responseText);
         } else {
             if (on_err) on_err(request.responseText,request.status);
@@ -64,7 +64,7 @@ function showPosition(position) {
         position.timestamp
     ];
     for (var i=0;i<10;i++) {
-        if (src[i] == null)
+        if (src[i] === null)
             fa[i] = NaN;
         else
             fa[i] = src[i];
@@ -186,9 +186,9 @@ function str2doubles(x) {
 function main(arg) {
     hit_id = arg;
     var prot = "ws:";
-    if (window.location.protocol == "https:")
+    if (window.location.protocol === "https:")
         prot = "wss:";
-    var target = prot + "//" + window.location.host + "/latency/websocket?" + hit_id;
+    var target = window.location.href.replace("http", "ws") + "websocket?" + hit_id;
     console.log(target);
     // target = "ws://localhost:4321/";
     var websocket = new WebSocket(target);
@@ -200,7 +200,7 @@ function main(arg) {
     };
     websocket.onmessage = function (evt) {
         try {
-            if (typeof(evt.data) == "string") {
+            if (typeof(evt.data) === "string") {
                 if (evt.data.indexOf('0x') === 0) {
                     websocket.send(evt.data);
                 }
