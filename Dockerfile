@@ -10,3 +10,4 @@ RUN ln -s forker-master forker
 RUN mkdir -p /opt/latency
 WORKDIR /opt/latency
 COPY . .
+EXPOSE 1234

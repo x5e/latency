@@ -1,6 +1,6 @@
 version: '2'
 services:
-    latency_db:
+    test_db:
         image: 'postgres:9.5'
         environment:
             POSTGRES_DB: 'latency'
@@ -8,3 +8,14 @@ services:
             - 5432:5432
         volumes:
             - ./sql:/docker-entrypoint-initdb.d
+    com:
+        build: .
+        command: /opt/latency/python/latency.py
+        environment:
+          #PYTHONPATH: /srv/repo/forker
+          PGUSER: doorman
+          PGPASSWORD: doorman
+          PGDATABASE: latency
+          PGHOST: db.x5e.com
+        ports:
+          - 1234:1234
