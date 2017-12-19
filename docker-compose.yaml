@@ -1,13 +1,31 @@
 version: '2'
 services:
-    test_db:
+    db:
         image: 'postgres:9.5'
         environment:
-            POSTGRES_DB: 'latency'
+            POSTGRES_DB: ci
+            POSTGRES_USER: app_user
+            POSTGRES_PASSWORD: app-user-password
+        restart: always
         ports:
-            - 5432:5432
+            - 5438:5432
         volumes:
             - ./sql:/docker-entrypoint-initdb.d
+
+    me:
+        build: .
+        links:
+            - db
+        command: /opt/latency/python/latency.py
+        environment:
+          #PYTHONPATH: /srv/repo/forker
+          PGUSER: app_user
+          PGPASSWORD: app-user-password
+          PGDATABASE: ci
+          PGHOST: db
+        ports:
+          - 1234:1234
+
     com:
         build: .
         command: /opt/latency/python/latency.py

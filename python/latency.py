@@ -14,12 +14,18 @@ from subprocess import Popen, PIPE
 
 assert sys.version_info >= (3, 4)
 PGHOST = os.environ.get("PGHOST")
-assert PGHOST
 PGDATABASE = os.environ.get("PGDATABASE")
-assert PGDATABASE
+PGUSER = os.environ.get("PGUSER")
+PGPASSWORD = os.environ.get("PGPASSWORD")
+PGPORT = int(os.environ.get("PGPORT", "5432"))
 
 
 def main(forking=True):
+    with get_con() as con:
+        with con.cursor() as cur:
+            cur.execute("select now() as abc")
+            abc = cur.fetchall()[0][0]
+            print("started at", abc, file=sys.stderr)
     port = 1234
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("../static")
@@ -276,10 +282,10 @@ def get_con():
     return psycopg2.connect(
         host=PGHOST,
         database=PGDATABASE,
-        user="doorman",
-        password="doorman",
+        user=PGUSER,
+        password=PGPASSWORD,
         connect_timeout=1,
-        port=5432)
+        port=PGPORT)
 
 
 def send_email(request: Request) -> bytes:
