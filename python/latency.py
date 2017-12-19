@@ -25,7 +25,7 @@ def main(forking=True):
         with con.cursor() as cur:
             cur.execute("select now() as abc")
             abc = cur.fetchall()[0][0]
-            print("started at", abc, file=sys.stderr)
+            print("started at", abc)
     port = 1234
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     os.chdir("../static")

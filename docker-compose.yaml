@@ -1,7 +1,7 @@
 version: '2'
 services:
     db:
-        image: 'postgres:9.5'
+        image: 'postgres:9.6'
         environment:
             POSTGRES_DB: ci
             POSTGRES_USER: app_user
@@ -10,7 +10,7 @@ services:
         ports:
             - 5438:5432
         volumes:
-            - ./sql:/docker-entrypoint-initdb.d
+            - ./migrations:/docker-entrypoint-initdb.d
 
     me:
         build: .
