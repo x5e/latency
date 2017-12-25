@@ -1,3 +1,4 @@
 .idea
 *.xcuserstate
 .DS_Store
+*.terraform*
