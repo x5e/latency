@@ -1,0 +1,32 @@
+   [
+    {
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/latency-task",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "portMappings": [
+        {
+          "hostPort": 1234,
+          "protocol": "tcp",
+          "containerPort": 1234
+        }
+      ],
+      "command": ["/opt/latency/python/latency.py"],
+      "cpu": 256,
+      "environment": [
+        {"name": "PGDATABASE","value": "latency"},
+        {"name": "PGHOST","value": "db.x5e.qa"},
+        {"name": "PGPASSWORD","value": "doorman"},
+        {"name": "PGUSER","value": "doorman"}
+      ],
+      "memory": 512,
+      "memoryReservation": 512,
+      "image": "082367326120.dkr.ecr.us-east-1.amazonaws.com/latency:master",
+      "essential": true,
+      "name": "latency-qa"
+    }
+  ]

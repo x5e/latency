@@ -18,5 +18,4 @@ provider "aws" {
 module "latency" {
   source = "../../latency"
   env_name = "qa"
-
 }
