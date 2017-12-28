@@ -11,3 +11,4 @@ RUN mkdir -p /opt/latency
 WORKDIR /opt/latency
 COPY . .
 EXPOSE 1234
+CMD ./bash/migrate.sh && ./python/latency.py
