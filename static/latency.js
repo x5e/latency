@@ -185,10 +185,10 @@ function str2doubles(x) {
 
 function main(arg) {
     hit_id = arg;
-    var prot = "ws:";
-    if (window.location.protocol === "https:")
-        prot = "wss:";
-    var target = window.location.href.replace("http", "ws") + "websocket?" + hit_id;
+    var target = window.location.href;
+    target = target.replace("http", "ws");
+    target = target.replace("www", "api");
+    target = target + "websocket?" + hit_id;
     console.log(target);
     // target = "ws://localhost:4321/";
     var websocket = new WebSocket(target);
