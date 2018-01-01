@@ -125,8 +125,8 @@ def knock(request: Request) -> bytes:
     hit_id = random.randint(WEB_MIN, WEB_MAX)
     received = json.loads(request.body.decode())
     server = "us-east-1.x5e.com"
-    if received.get("distances", {}).get("us-west-1", 1e9) < received.get("distances", {}).get("us-east-1", 1e9):
-        server = "us-west-1.x5e.com"
+    # if received.get("distances", {}).get("us-west-1", 1e9) < received.get("distances", {}).get("us-east-1", 1e9):
+    #    server = "us-west-1.x5e.com"
     sending = json.dumps(dict(hit_id=hit_id, server=server, name=server)).encode()
     # sys.stdout.write(sending)
     out += sending

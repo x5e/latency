@@ -15,7 +15,6 @@ services:
         links:
             - db
         environment:
-          #PYTHONPATH: /srv/repo/forker
           PGUSER: app_user
           PGPASSWORD: app-user-password
           PGDATABASE: ci
@@ -23,14 +22,13 @@ services:
         ports:
           - 1234:1234
 
-    com:
+    misc:
         build: .
         command: /opt/latency/python/latency.py
         environment:
-          #PYTHONPATH: /srv/repo/forker
-          PGUSER: doorman
-          PGPASSWORD: doorman
-          PGDATABASE: latency
-          PGHOST: db.x5e.com
+          - PGUSER
+          - PGPASSWORD
+          - PGDATABASE
+          - PGHOST
         ports:
           - 1234:1234
