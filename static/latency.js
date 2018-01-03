@@ -1,6 +1,7 @@
 "use strict";
 var points = [];
 var hit_id = null;
+var api = window.location.href.replace("www", "api");
 
 function register_hit() {
     var payload = {};
@@ -13,7 +14,7 @@ function register_hit() {
     payload.screenHeight = screen.height;
     payload.userAgent = navigator.userAgent;
     payload.href = window.location.href;
-    whack("xhr/hit", JSON.stringify(payload), main, putMsg)
+    whack(api + "xhr/hit", JSON.stringify(payload), main, putMsg)
 }
 
 function whack(url, data, cb, on_err, on_timeout) {
@@ -78,7 +79,7 @@ function showPosition(position) {
     };
     var kind = "desktop";
     if (window.innerWidth <= 480) kind = "mobile";
-    whack("xhr/geo?" + kind,ab,cb,err);
+    whack(api + "xhr/geo?" + kind,ab,cb,err);
 }
 
 function showError(error) {
@@ -185,10 +186,7 @@ function str2doubles(x) {
 
 function main(arg) {
     hit_id = arg;
-    var target = window.location.href;
-    target = target.replace("http", "ws");
-    target = target.replace("www", "api");
-    target = target + "websocket?" + hit_id;
+    var target = api.replace("http", "ws") + "websocket?" + hit_id;
     console.log(target);
     // target = "ws://localhost:4321/";
     var websocket = new WebSocket(target);
